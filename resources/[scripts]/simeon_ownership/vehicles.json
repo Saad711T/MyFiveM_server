@@ -1,0 +1,14 @@
+{
+  "vehicles": [
+    { "model": "futo",      "label": "Karin Futo",              "price": 18000 },
+    { "model": "blista",    "label": "Dinka Blista",            "price": 22000 },
+    { "model": "buffalo",   "label": "Bravado Buffalo",         "price": 45000 },
+    { "model": "sultan",    "label": "Karin Sultan",            "price": 52000 },
+    { "model": "comet2",    "label": "Pfister Comet",           "price": 85000 },
+    { "model": "dominator", "label": "Vapid Dominator",         "price": 60000 },
+    { "model": "kuruma",    "label": "Karin Kuruma",            "price": 90000 },
+    { "model": "banshee",   "label": "Bravado Banshee",         "price": 120000 },
+    { "model": "elegy",     "label": "Annis Elegy RH8",         "price": 140000 },
+    { "model": "adder",     "label": "Truffade Adder",          "price": 1000000 }
+  ]
+}
