@@ -1,6 +1,6 @@
-
 local nearSimeon = false
 local nearPD = false
+local showroomOpen = false
 
 local function help(msg)
     BeginTextCommandDisplayHelp('STRING')
@@ -41,7 +41,22 @@ local function trySpawnPointAround(origin, baseDist)
 end
 -- ===================================
 
--- Draw markers
+-- ===== Map Blips =====
+CreateThread(function()
+    for _, b in ipairs(Config.Blips or {}) do
+        local blip = AddBlipForCoord(b.pos.x, b.pos.y, b.pos.z)
+        SetBlipSprite(blip, b.sprite or 1)
+        SetBlipColour(blip, b.color or 0)
+        SetBlipScale(blip, b.scale or 0.9)
+        SetBlipAsShortRange(blip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentSubstringPlayerName(b.label or 'Blip')
+        EndTextCommandSetBlipName(blip)
+    end
+end)
+-- =====================
+
+-- Draw markers + proximity detection
 CreateThread(function()
     while true do
         local sleep = 1000
@@ -68,21 +83,19 @@ CreateThread(function()
     end
 end)
 
-
-
-
-
-
+-- Interaction prompts
 CreateThread(function()
     while true do
         Wait(0)
-        if nearSimeon then
+        if showroomOpen then
+            Wait(200)
+        elseif nearSimeon then
             help("~INPUT_CONTEXT~ Open Simeon showroom")
             if IsControlJustReleased(0, Config.KeyInteract) then
                 TriggerServerEvent('so:requestShowroom')
             end
         elseif nearPD then
-            help("~INPUT_CONTEXT~ Show your owned cars (spawn here)")
+            help("~INPUT_CONTEXT~ Open your garage (spawn cars)")
             if IsControlJustReleased(0, Config.KeyInteract) then
                 TriggerServerEvent('so:requestOwned')
             end
@@ -90,93 +103,112 @@ CreateThread(function()
     end
 end)
 
--- Show showroom list
+-- ===== Showroom NUI =====
 RegisterNetEvent('so:showShowroom')
-AddEventHandler('so:showShowroom', function(list)
-    TriggerEvent('chat:addMessage', { args = { 'Simeon', '^5Available cars for purchase:' } })
-    for i, v in ipairs(list) do
-        TriggerEvent('chat:addMessage', { args = { 'Simeon',
-            ('^3%s^7 | model: ^2%s^7 | Price: ^2$%s'):format(v.label, v.model, v.price) } })
-    end
-    TriggerEvent('chat:addMessage', { args = { 'Simeon',
-        '^7Use: ^2/buycar <model> ^7while inside the showroom area' } })
+AddEventHandler('so:showShowroom', function(vehicles, owned, balance)
+    showroomOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action   = 'open',
+        vehicles = vehicles,
+        owned    = owned or {},
+        balance  = balance or 0
+    })
 end)
 
--- Buy  command
-RegisterCommand('buycar', function(_, args)
-    if not nearSimeon then
-        TriggerEvent('chat:addMessage', { args={'Simeon','^1You must be inside Simeon showroom area'} })
-        return
+-- اللاعب ضغط Buy في الواجهة
+RegisterNUICallback('buy', function(data, cb)
+    cb({ ok = true })
+    if data and data.model then
+        TriggerServerEvent('so:tryBuyVehicle', data.model)
     end
-    local model = args[1]
-    if not model then
-        TriggerEvent('chat:addMessage', { args={'Simeon','^1Usage: /buycar <model>'} })
-        return
-    end
-    TriggerServerEvent('so:tryBuyVehicle', model)
 end)
 
+-- اللاعب أغلق الواجهة
+RegisterNUICallback('close', function(_, cb)
+    cb({ ok = true })
+    showroomOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
+end)
 
+-- تحديث الواجهة بعد الشراء (بدون إغلاق)
+RegisterNetEvent('so:updateShowroom')
+AddEventHandler('so:updateShowroom', function(owned, balance)
+    SendNUIMessage({
+        action  = 'update',
+        owned   = owned or {},
+        balance = balance or 0
+    })
+end)
+
+-- ===== Owned cars: garage with spawn-location picker =====
 RegisterNetEvent('so:receiveOwned')
 AddEventHandler('so:receiveOwned', function(list)
     if not nearPD then
-        TriggerEvent('chat:addMessage', { args={'PD Garage','^1Go to the police station to view your cars'} })
+        TriggerEvent('chat:addMessage', { args={'Garage','^1Go to the police station to view your cars'} })
         return
     end
     if #list == 0 then
-        TriggerEvent('chat:addMessage', { args={'PD Garage','^3You do not own any cars'} })
+        TriggerEvent('chat:addMessage', { args={'Garage','^3You do not own any cars'} })
         return
     end
-    TriggerEvent('chat:addMessage', { args={'PD Garage','^5Your owned cars:'} })
+    TriggerEvent('chat:addMessage', { args={'Garage','^5Your owned cars:'} })
     for i, v in ipairs(list) do
-        TriggerEvent('chat:addMessage', { args={'PD Garage', ('^2[%d]^7 %s (^3%s^7)'):format(i, v.label, v.model)} })
+        TriggerEvent('chat:addMessage', { args={'Garage', ('^2[%d]^7 %s (^3%s^7)'):format(i, v.label, v.model)} })
     end
-    TriggerEvent('chat:addMessage', { args={'PD Garage','^7Use: ^2/spawncar <model> ^7to spawn your car'} })
+    -- اعرض أماكن الريسبون المتاحة
+    local spots = {}
+    for _, sp in ipairs(Config.SpawnPoints or {}) do
+        spots[#spots+1] = sp.id
+    end
+    TriggerEvent('chat:addMessage', { args={'Garage','^7Spawn locations: ^2' .. table.concat(spots, ', ')} })
+    TriggerEvent('chat:addMessage', { args={'Garage','^7Use: ^2/spawncar <model> [location]^7  (location optional, default = pd)'} })
 end)
-
 
 RegisterCommand('spawncar', function(_, args)
     if not nearPD then
-        TriggerEvent('chat:addMessage', { args={'PD Garage','^1You must be at the police station to spawn cars'} })
+        TriggerEvent('chat:addMessage', { args={'Garage','^1You must be at the police station to spawn cars'} })
         return
     end
     local model = args[1]
     if not model then
-        TriggerEvent('chat:addMessage', { args={'PD Garage','^1Usage: /spawncar <model>'} })
+        TriggerEvent('chat:addMessage', { args={'Garage','^1Usage: /spawncar <model> [location]'} })
         return
     end
-    TriggerServerEvent('so:spawnOwned', model, Config.PDSpawn, Config.PDSpawnHeading)
+    local locId = args[2] or 'pd'
+    TriggerServerEvent('so:spawnOwned', model, locId)
 end)
 
-
-
-
-
+-- اطلب من السيرفر التحقق ثم اطلع السيارة في الموقع المختار
 RegisterNetEvent('so:doClientSpawn')
-
-
-
-
-AddEventHandler('so:doClientSpawn', function(model, coords, heading)
+AddEventHandler('so:doClientSpawn', function(model, locId)
     local hash = GetHashKey(model)
     if not IsModelInCdimage(hash) then
-        TriggerEvent('chat:addMessage', { args={'PD Garage','^1Invalid model in this Game Build'} })
+        TriggerEvent('chat:addMessage', { args={'Garage','^1Invalid model in this Game Build'} })
         return
+    end
+
+    -- حدد الموقع المطلوب
+    local origin = Config.PDSpawn
+    local baseHeading = Config.PDSpawnHeading or 0.0
+    for _, sp in ipairs(Config.SpawnPoints or {}) do
+        if sp.id == locId then
+            origin = vector3(sp.pos.x, sp.pos.y, sp.pos.z)
+            baseHeading = sp.pos.w
+            break
+        end
     end
 
     RequestModel(hash)
     while not HasModelLoaded(hash) do Wait(0) end
 
-    local origin = coords or Config.PDSpawn
     local spawnPos, spawnHead = trySpawnPointAround(origin, 8.0)
-    local veh = CreateVehicle(hash, spawnPos.x, spawnPos.y, spawnPos.z, (spawnHead or heading or Config.PDSpawnHeading or 0.0), true, false)
+    local veh = CreateVehicle(hash, spawnPos.x, spawnPos.y, spawnPos.z, (spawnHead or baseHeading or 0.0), true, false)
 
     SetVehicleOnGroundProperly(veh)
     SetPedIntoVehicle(PlayerPedId(), veh, -1)
     SetVehicleNumberPlateText(veh, "OWNED")
     SetEntityAsMissionEntity(veh, true, true)
     SetModelAsNoLongerNeeded(hash)
-
-
-    
 end)

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Simeon Showroom</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <div class="panel">
+      <header class="header">
+        <div>
+          <h1>Simeon Premium Deluxe Motorsport</h1>
+          <p class="subtitle">Pick a vehicle, then confirm purchase.</p>
+        </div>
+        <button id="closeBtn" class="close-btn" title="Close (ESC)">&times;</button>
+      </header>
+
+      <div class="topbar">
+        <div class="balance">Your balance: <span id="balance">$0</span></div>
+        <input id="search" class="search" type="text" placeholder="Search by name or model..." />
+      </div>
+
+      <div id="grid" class="grid"></div>
+      <div id="empty" class="empty hidden">No vehicles match your search.</div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

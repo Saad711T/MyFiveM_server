@@ -3,8 +3,10 @@ game 'gta5'
 
 name 'simeon_ownership'
 author 'saadthelegend'
-description 'Buy cars at Simeon and spawn owned cars at Mission Row PD'
-version '1.0.0'
+description 'Buy cars at Simeon (NUI), spawn owned cars at multiple locations, with map blips'
+version '2.0.0'
+
+ui_page 'html/index.html'
 
 server_scripts {
     'server.lua'
@@ -16,5 +18,8 @@ client_scripts {
 }
 
 files {
-    'vehicles.json'
+    'vehicles.json',
+    'html/index.html',
+    'html/style.css',
+    'html/app.js'
 }
