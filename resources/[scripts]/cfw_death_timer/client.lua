@@ -1,15 +1,12 @@
 -- CFW: downed timer + revive + auto hospital respawn
 
-local DOWN_TIME = 60         -- ثواني
+local DOWN_TIME = 60         -- Seconds
 local isDown = false
 local downEndsAt = 0
 local lastPos = nil
 
--- Pillbox Hospital
+-- Pillbox (Elgin Ave)
 local HOSPITAL = { x = 298.47, y = -584.73, z = 43.26, h = 70.0 }
-
-
-
 
 
 local function drawHelp(text)
@@ -24,8 +21,10 @@ end
 
 local function disableControlsWhileDown()
   DisableAllControlActions(0)
-  EnableControlAction(0, 245, true) -- T chat
-  EnableControlAction(0, 249, true) -- N push-to-talk
+  EnableControlAction(0, 245, true) 
+  
+  EnableControlAction(0, 249, true) 
+  
 end
 
 local function resurrectHere()
@@ -44,6 +43,7 @@ local function reviveAtHospital()
   SetEntityHealth(ped, 200)
   ClearPedTasksImmediately(ped)
 end
+
 
 
 RegisterNetEvent('cfw:clientRevive')
@@ -77,6 +77,8 @@ AddEventHandler('baseevents:onPlayerDied', function(killerType, deathCoords)
     end
   end)
 end)
+
+
 
 
 

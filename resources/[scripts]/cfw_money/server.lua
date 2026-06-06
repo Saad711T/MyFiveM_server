@@ -1,7 +1,7 @@
 
+
 local Accounts = {}
 local dirty = false
-
 
 local function save()
     local ok, content = pcall(json.encode, Accounts)
@@ -18,7 +18,6 @@ local function load()
         if ok and type(data) == 'table' then Accounts = data end
     end
 end
-
 
 
 local function getLicense(src)
@@ -41,6 +40,7 @@ local function ensureAccount(license)
     end
     return Accounts[license]
 end
+
 
 
 local function getMoney(license, account)
@@ -74,21 +74,21 @@ local function syncClient(src)
 end
 
 
-
-
 local function withLicense(src, fn)
     local license = getLicense(src)
     if not license then return false end
     return fn(license)
 end
 
+
+
+
+
 exports('GetMoney', function(src, account)
     return withLicense(src, function(license)
         return getMoney(license, account or 'cash')
     end) or 0
 end)
-
-
 
 
 exports('GetAccounts', function(src)
@@ -108,8 +108,6 @@ exports('AddMoney', function(src, account, amount)
 end)
 
 
-
-
 exports('RemoveMoney', function(src, account, amount)
     local result = withLicense(src, function(license)
         return removeMoney(license, account or 'cash', amount)
@@ -119,16 +117,11 @@ exports('RemoveMoney', function(src, account, amount)
 end)
 
 
-
-
 exports('CanAfford', function(src, account, amount)
     return withLicense(src, function(license)
         return getMoney(license, account or 'cash') >= amount
     end) or false
 end)
-
-
-
 
 
 
@@ -142,6 +135,7 @@ RegisterCommand('cash', function(src)
     })
 end, false)
 
+
 RegisterCommand('pay', function(src, args)
     local target = tonumber(args[1])
     local amount = tonumber(args[2])
@@ -153,7 +147,6 @@ RegisterCommand('pay', function(src, args)
         TriggerClientEvent('chat:addMessage', src, { args = { 'Pay', '^1Player not found' } })
         return
     end
-
 
     local senderLic = getLicense(src)
     local targetLic = getLicense(target)
@@ -170,9 +163,13 @@ RegisterCommand('pay', function(src, args)
     TriggerClientEvent('chat:addMessage', target, { args = { 'Pay', ('^2Received %s%d from %s'):format(Config.CurrencySymbol, amount, GetPlayerName(src)) } })
 end, false)
 
+
+
+
+
+
+
 RegisterCommand('givemoney', function(src, args)
-
-
 
     if src ~= 0 and not IsPlayerAceAllowed(src, 'command') then
         TriggerClientEvent('chat:addMessage', src, { args = { 'Admin', '^1No permission' } })
@@ -194,6 +191,10 @@ RegisterCommand('givemoney', function(src, args)
     if src == 0 then print(done) else TriggerClientEvent('chat:addMessage', src, { args = { 'Admin', done } }) end
 end, false)
 
+
+
+
+
 AddEventHandler('onResourceStart', function(res)
     if res ~= GetCurrentResourceName() then return end
     load()
@@ -205,8 +206,6 @@ AddEventHandler('onResourceStop', function(res)
     save()
 end)
 
-
-
 AddEventHandler('playerJoining', function()
     local src = source
     local license = getLicense(src)
@@ -214,9 +213,11 @@ AddEventHandler('playerJoining', function()
 end)
 
 
+
 RegisterNetEvent('cfw_money:requestSync', function()
     syncClient(source)
 end)
+
 
 
 
@@ -234,8 +235,6 @@ CreateThread(function()
         if dirty then save() end
     end
 end)
-
-
 
 
 

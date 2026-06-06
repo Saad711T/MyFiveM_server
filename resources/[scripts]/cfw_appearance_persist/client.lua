@@ -29,7 +29,6 @@ local function normalizeAppearance(app)
   h.highlight = clampNonNeg(h.highlight or h.secondaryColor or h.highlightColor)
 
 
-
   app.headOverlays = app.headOverlays or app.overlays or app.overlay or {}
   local ov = app.headOverlays
 
@@ -39,7 +38,6 @@ local function normalizeAppearance(app)
     ov.beard.opacity = (ov.beard.opacity and ov.beard.opacity > 0) and ov.beard.opacity or 1.0
     ov.beard.color   = clampNonNeg(ov.beard.color or ov.beard.primaryColor)
     ov["1"] = ov.beard
-
   end
 
   ov.eyebrows = ov.eyebrows or ov["2"] or ov.Eyebrows
@@ -65,17 +63,15 @@ local function applyAppearanceSafe(app)
   if not app or not exports['fivem-appearance'] then return end
   normalizeAppearance(app)
 
+
   exports['fivem-appearance']:setPlayerAppearance(app)
 
 
   local ped = PlayerPedId()
 
-
   local h = app.hair or {}
   local style   = tonumber(h.style) or 0
   local tex     = tonumber(h.texture) or 0
-
-
   local color   = clampNonNeg(h.color)
   local hiColor = clampNonNeg(h.highlight)
 
@@ -89,7 +85,7 @@ local function applyAppearanceSafe(app)
     local bOpacity = (beard.opacity and beard.opacity > 0) and beard.opacity or 1.0
     local bColor   = clampNonNeg(beard.color)
     SetPedHeadOverlay(ped, 1, bIndex, bOpacity)
-    SetPedHeadOverlayColor(ped, 1, 1, bColor, bColor) -- palette 1 = hair
+    SetPedHeadOverlayColor(ped, 1, 1, bColor, bColor)
   end
 
   local brows = ov["2"]
@@ -110,7 +106,7 @@ local function applyAppearanceSafe(app)
     SetPedHeadOverlayColor(ped, 8, 2, lColor, lColor) -- palette 2
   end
 end
--- ====== /NORMALIZE + FIX ======
+
 
 local function applyJSON(jsonStr)
   if not jsonStr or #jsonStr == 0 then return end
@@ -118,6 +114,9 @@ local function applyJSON(jsonStr)
   if not ok or not app then return end
   applyAppearanceSafe(app)
 end
+
+
+
 
 RegisterNetEvent('cfwapp:haveAppearance', function(j)
   if j and #j > 0 then
@@ -135,10 +134,15 @@ RegisterNetEvent('cfwapp:haveAppearance', function(j)
 end)
 
 
+
+
 CreateThread(function()
   Wait(1000)
   TriggerServerEvent('cfwapp:reqAppearance')
 end)
+
+
+
 
 
 AddEventHandler('playerSpawned', function()
@@ -149,6 +153,8 @@ AddEventHandler('playerSpawned', function()
     end)
   end
 end)
+
+
 
 
 local function openCustomization()

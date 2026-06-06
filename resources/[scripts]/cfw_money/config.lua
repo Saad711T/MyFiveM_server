@@ -7,7 +7,6 @@ Config.StartingBank = 500
 Config.SaveFile = 'accounts.json'
 
 
-
 Config.AutoSaveInterval = 120
 
 

@@ -1,0 +1,5 @@
+secrets.cfg
+server_internal.cfg
+*.key
+owned_vehicles.json
+balances.json

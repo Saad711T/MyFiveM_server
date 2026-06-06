@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inventory</title>
+<style>
+:root{
+  --accent:#4cc9f0; --accent2:#80ffdb;
+  --weapon:#ff6b6b; --food:#51cf66; --money:#ffd166; --misc:#9aa4af;
+}
+*{box-sizing:border-box;margin:0;padding:0;
+  /* يمنع التحديد الأزرق مثل صفحة الويب */
+  user-select:none;-webkit-user-select:none;-moz-user-select:none;
+}
+html,body{height:100%;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{background:transparent;overflow:hidden}
+#app{position:fixed;inset:0;display:grid;place-items:center}
+#app.hidden{display:none}
+
+.panel{
+  width:min(620px,90vw);
+  background:rgba(11,15,18,.72);
+  backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;
+  padding:24px;
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
+  animation:pop .2s ease;
+}
+@keyframes pop{from{transform:scale(.97);opacity:0}to{transform:scale(1);opacity:1}}
+
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+h1{font-size:22px;color:#fff;letter-spacing:.5px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hint{color:#9aa4af;font-size:12px}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:10px;
+}
+
+.slot{
+  position:relative;
+  aspect-ratio:1/1;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+  overflow:hidden;
+}
+.slot.filled{background:rgba(255,255,255,.06);cursor:grab}
+.slot.filled:active{cursor:grabbing}
+.slot.filled:hover{border-color:var(--accent2);box-shadow:0 6px 18px rgba(128,255,219,.12)}
+
+/* الخلية المستهدفة أثناء السحب */
+.slot.drop-target{border-color:var(--accent);background:rgba(76,201,240,.14);box-shadow:0 0 0 2px rgba(76,201,240,.4) inset}
+/* العنصر المسحوب */
+.slot.dragging{opacity:.35}
+
+.slot.weapon::before,.slot.food::before,.slot.money::before,.slot.misc::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+}
+.slot.weapon::before{background:var(--weapon)}
+.slot.food::before{background:var(--food)}
+.slot.money::before{background:var(--money)}
+.slot.misc::before{background:var(--misc)}
+
+.item-img{
+  width:64%;height:64%;object-fit:contain;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));
+  pointer-events:none;-webkit-user-drag:none;
+}
+.item-fallback{font-size:24px;font-weight:700;color:#fff;opacity:.5;pointer-events:none}
+
+.item-label{
+  position:absolute;bottom:4px;left:4px;right:4px;
+  font-size:10px;color:#cfd8e0;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;
+}
+.item-count{
+  position:absolute;top:5px;right:6px;
+  font-size:12px;font-weight:700;color:#fff;
+  background:rgba(0,0,0,.55);border-radius:6px;padding:1px 5px;pointer-events:none;
+}
+.item-ammo{
+  position:absolute;top:5px;left:6px;
+  font-size:10px;color:var(--weapon);
+  background:rgba(0,0,0,.55);border-radius:6px;padding:1px 5px;pointer-events:none;
+}
+.slot-num{position:absolute;bottom:3px;left:5px;font-size:9px;color:rgba(255,255,255,.18);pointer-events:none}
+
+/* قائمة الخيارات (استخدام/إسقاط) */
+.ctx{
+  position:fixed;z-index:100;
+  background:rgba(15,20,25,.98);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:12px;padding:6px;
+  min-width:150px;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);
+}
+.ctx.hidden{display:none}
+.ctx button{
+  display:block;width:100%;text-align:right;
+  background:transparent;border:none;color:#e6edf3;
+  padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer;
+  font-family:inherit;
+}
+.ctx button:hover{background:rgba(255,255,255,.08)}
+.ctx button.use{color:var(--accent2)}
+.ctx button.drop{color:var(--weapon)}
+.ctx .ctx-title{font-size:12px;color:#9aa4af;padding:4px 12px 8px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:4px}
+
+/* عنصر يطير مع الماوس أثناء السحب */
+.drag-ghost{
+  position:fixed;z-index:200;pointer-events:none;
+  width:60px;height:60px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(20,26,32,.9);border:1px solid var(--accent2);border-radius:12px;
+  transform:translate(-50%,-50%);
+}
+.drag-ghost img{width:70%;height:70%;object-fit:contain}
+.drag-ghost.hidden{display:none}
+</style>
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+    <div class="header">
+      <h1>Inventory</h1>
+      <span class="hint">اسحب للنقل · انقر للخيارات · ESC للإغلاق</span>
+    </div>
+    <div id="grid" class="grid"></div>
+  </div>
+</div>
+
+<div id="ctx" class="ctx hidden"></div>
+<div id="ghost" class="drag-ghost hidden"><img id="ghostImg" src="" alt=""/></div>
+
+<script>
+const RES=(window.GetParentResourceName?window.GetParentResourceName():'cfw_inventory');
+const $app=document.getElementById('app');
+const $grid=document.getElementById('grid');
+const $ctx=document.getElementById('ctx');
+const $ghost=document.getElementById('ghost');
+const $ghostImg=document.getElementById('ghostImg');
+let SLOTS=24;
+let ITEMS={};
+
+let drag=null; // {fromSlot, item}
+
+function post(n,d){return fetch(`https://${RES}/${n}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d||{})}).catch(()=>{})}
+
+function imgSrc(name){return `images/${name}.png`}
+
+function buildSlot(i){
+  const slot=document.createElement('div');
+  slot.className='slot';
+  slot.dataset.slot=i;
+
+  const item=ITEMS[String(i)];
+  if(item){
+    slot.classList.add('filled', item.type||'misc');
+
+    const img=document.createElement('img');
+    img.className='item-img';
+    img.src=imgSrc(item.name);
+    img.onerror=()=>{
+      img.remove();
+      const fb=document.createElement('div');
+      fb.className='item-fallback';
+      fb.textContent=(item.label||item.name||'?').charAt(0).toUpperCase();
+      slot.insertBefore(fb, slot.firstChild);
+    };
+    slot.appendChild(img);
+
+    if(item.count && item.count>1){
+      const c=document.createElement('div');c.className='item-count';c.textContent=item.count;slot.appendChild(c);
+    }
+    if(item.ammo!==undefined && item.ammo!==null){
+      const a=document.createElement('div');a.className='item-ammo';a.textContent='🔫'+item.ammo;slot.appendChild(a);
+    }
+    const lbl=document.createElement('div');lbl.className='item-label';lbl.textContent=item.label||item.name;slot.appendChild(lbl);
+  }
+
+  const num=document.createElement('div');num.className='slot-num';num.textContent=i;slot.appendChild(num);
+  return slot;
+}
+
+function render(){
+  $grid.innerHTML='';
+  for(let i=0;i<SLOTS;i++) $grid.appendChild(buildSlot(i));
+}
+
+function show(){$app.classList.remove('hidden')}
+function hide(){$app.classList.add('hidden');hideCtx()}
+
+// ===== القائمة (استخدام/إسقاط) =====
+function hideCtx(){$ctx.classList.add('hidden')}
+function showCtx(slotIndex, x, y){
+  const item=ITEMS[String(slotIndex)];
+  if(!item) return;
+  $ctx.innerHTML='';
+  const title=document.createElement('div');
+  title.className='ctx-title';
+  title.textContent=item.label||item.name;
+  $ctx.appendChild(title);
+
+  // زر استخدام (للأكل والسلاح فقط)
+  if(item.type==='food' || item.type==='weapon'){
+    const useBtn=document.createElement('button');
+    useBtn.className='use';
+    useBtn.textContent = item.type==='weapon' ? 'استخدام (تجهيز السلاح)' : 'أكل';
+    useBtn.onclick=()=>{hideCtx();post('useItem',{slot:slotIndex})};
+    $ctx.appendChild(useBtn);
+  }
+  // زر إسقاط (للكل)
+  const dropBtn=document.createElement('button');
+  dropBtn.className='drop';
+  dropBtn.textContent='إسقاط / إتلاف';
+  dropBtn.onclick=()=>{hideCtx();post('dropItem',{slot:slotIndex})};
+  $ctx.appendChild(dropBtn);
+
+  $ctx.style.left=Math.min(x, window.innerWidth-170)+'px';
+  $ctx.style.top=Math.min(y, window.innerHeight-120)+'px';
+  $ctx.classList.remove('hidden');
+}
+
+// ===== السحب والإفلات =====
+function onMouseDown(e){
+  const slotEl=e.target.closest('.slot');
+  if(!slotEl) { hideCtx(); return; }
+  const idx=parseInt(slotEl.dataset.slot);
+  const item=ITEMS[String(idx)];
+  if(!item) { hideCtx(); return; }
+
+  // نبدأ سحب محتمل — لو تحرك الماوس = سحب، لو ما تحرك = نقر للقائمة
+  let moved=false;
+  const startX=e.clientX, startY=e.clientY;
+
+  function move(ev){
+    if(!moved){
+      if(Math.abs(ev.clientX-startX)>5 || Math.abs(ev.clientY-startY)>5){
+        moved=true;
+        drag={fromSlot:idx, item:item};
+        slotEl.classList.add('dragging');
+        $ghostImg.src=imgSrc(item.name);
+        $ghost.classList.remove('hidden');
+        hideCtx();
+      }
+    }
+    if(moved){
+      $ghost.style.left=ev.clientX+'px';
+      $ghost.style.top=ev.clientY+'px';
+      // تمييز الخلية تحت الماوس
+      document.querySelectorAll('.slot.drop-target').forEach(s=>s.classList.remove('drop-target'));
+      const over=document.elementFromPoint(ev.clientX,ev.clientY);
+      const overSlot=over && over.closest('.slot');
+      if(overSlot) overSlot.classList.add('drop-target');
+    }
+  }
+
+  function up(ev){
+    document.removeEventListener('mousemove',move);
+    document.removeEventListener('mouseup',up);
+    if(moved && drag){
+      const over=document.elementFromPoint(ev.clientX,ev.clientY);
+      const overSlot=over && over.closest('.slot');
+      slotEl.classList.remove('dragging');
+      document.querySelectorAll('.slot.drop-target').forEach(s=>s.classList.remove('drop-target'));
+      $ghost.classList.add('hidden');
+      if(overSlot){
+        const toIdx=parseInt(overSlot.dataset.slot);
+        if(toIdx!==drag.fromSlot){
+          post('moveItem',{from:drag.fromSlot, to:toIdx});
+        }
+      }
+      drag=null;
+    } else {
+      // ما تحرك = نقرة → اعرض القائمة
+      showCtx(idx, ev.clientX, ev.clientY);
+    }
+  }
+
+  document.addEventListener('mousemove',move);
+  document.addEventListener('mouseup',up);
+}
+
+$grid.addEventListener('mousedown',onMouseDown);
+document.addEventListener('mousedown',e=>{ if(!e.target.closest('.ctx') && !e.target.closest('.slot')) hideCtx(); });
+
+// ===== رسائل من الـ client =====
+window.addEventListener('message',e=>{
+  const m=e.data||{};
+  if(m.action==='open'){ SLOTS=m.slots||24; ITEMS=m.items||{}; render(); show(); }
+  else if(m.action==='update'){ SLOTS=m.slots||24; ITEMS=m.items||{}; render(); }
+  else if(m.action==='close'){ hide(); }
+});
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){hide();post('close',{})}
+});
+
+function ready(){post('nuiReady',{})}
+window.addEventListener('load',ready);
+ready();
+</script>
+</body>
+</html>

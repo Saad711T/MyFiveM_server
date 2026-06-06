@@ -29,6 +29,7 @@ local function removeFromList(lic, nm)
   saveList(lic, t)
 end
 
+-- يطلب الافتراضي عند الدخول
 RegisterNetEvent('cfwapp:reqAppearance', function()
   local src = source
   local lic = licOf(src)
@@ -36,11 +37,7 @@ RegisterNetEvent('cfwapp:reqAppearance', function()
   TriggerClientEvent('cfwapp:haveAppearance', src, data or '')
 end)
 
-
-
-
-
-
+-- حفظ الافتراضي
 RegisterNetEvent('cfwapp:saveAppearance', function(jsonStr)
   if type(jsonStr) ~= 'string' or #jsonStr == 0 then return end
   local src = source
@@ -49,7 +46,7 @@ RegisterNetEvent('cfwapp:saveAppearance', function(jsonStr)
   TriggerClientEvent('chat:addMessage', src, { args={'CFW','^2Default skin saved.'} })
 end)
 
-
+-- سِكِن مسمى: حفظ
 RegisterNetEvent('cfwapp:saveNamed', function(name, jsonStr)
   if type(name) ~= 'string' or #name == 0 then return end
   if type(jsonStr) ~= 'string' or #jsonStr == 0 then return end
@@ -61,8 +58,7 @@ RegisterNetEvent('cfwapp:saveNamed', function(name, jsonStr)
   TriggerClientEvent('chat:addMessage', src, { args={'CFW',('^2Skin "%s" saved.'):format(nm)} })
 end)
 
-
-
+-- سِكِن مسمى: تحميل
 RegisterNetEvent('cfwapp:loadNamed', function(name)
   if type(name) ~= 'string' or #name == 0 then return end
   local src = source
@@ -72,13 +68,14 @@ RegisterNetEvent('cfwapp:loadNamed', function(name)
   TriggerClientEvent('cfwapp:receiveNamed', src, nm, data)
 end)
 
-
+-- سِكِن مسمى: قائمة
 RegisterNetEvent('cfwapp:listNamed', function()
   local src = source
   local lic = licOf(src)
   TriggerClientEvent('cfwapp:receiveList', src, loadList(lic))
 end)
 
+-- سِكِن مسمى: حذف
 RegisterNetEvent('cfwapp:deleteNamed', function(name)
   if type(name) ~= 'string' or #name == 0 then return end
   local src = source
@@ -89,7 +86,7 @@ RegisterNetEvent('cfwapp:deleteNamed', function(name)
   TriggerClientEvent('chat:addMessage', src, { args={'CFW',('^3Skin "%s" deleted.'):format(nm)} })
 end)
 
-
+-- (اختياري) من كونسول السيرفر: cfw_reset <serverId>
 RegisterCommand('cfw_reset', function(_, args)
   local id = tonumber(args[1] or '')
   if not id then print('usage: cfw_reset <serverId>'); return end
