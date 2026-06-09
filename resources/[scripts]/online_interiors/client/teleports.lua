@@ -271,8 +271,6 @@ INTERIORS = {
 	--	[209] = {text = "Enter Music Locker", coord = vector3(987.57, 79.82, 80.99), h = 330.39, dest = {208}, veh = false},
 
 	-- Tuner DLC Garage 
-	[210] = {text = "Leave Tuners Car Garage", dest = {211}, coord = vector3(-1357.85, 165.96, -99.03), h = 184.89},
-	[211] = {text = "Enter Tuners Car Garage", dest = {210}, coord = vector3(798.51, -962.21, 25.97), h = 92.76},
 
 	-- Tuner DLC Car Meet  
 	[212] = {text = "Leave Tuners Car Meet", dest = {213}, coord = vector3(-2220.81, 1157.72, -23.26), h = 182.38},

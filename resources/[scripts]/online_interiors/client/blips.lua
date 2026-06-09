@@ -98,9 +98,6 @@ local blips = {
     -- Martin Madrazo's Ranch
     {text = "Martin Madrazo's Ranch", color = 48, sprite = 414, coord = vector3(1395.21, 1141.76, 114.4)},
 
-    -- Submarine
-    {text = "Submarine", color = 3, sprite = 308, coord = vector3(493.79, -3222.95, 10.5)},
-
     -- Server Farm
     {text = "Server Farm", color = 0, sprite = 521, coord = vector3(2476.11, -384.15, 94.2)},
 
@@ -192,9 +189,6 @@ local blips = {
 
 
     -- Los Santos Tuners DLC Teleports. Requires Enforcing of Gamebuild 2372
-
-    -- Tuner Garage
-    {text = "Tuner Garage", color = 48, sprite = 524, coord = vector3(804.21, -963.61, 42.57)},
 
     -- Tuner Car Meet 
     {text = "Tuner Car Meet", color = 2, sprite = 777, coord = vector3(776.35, -1867.26, 52.93)},
